@@ -29,6 +29,7 @@ void doAppropriateSteps(char *operator, struct stack **top);
 
 bool isNumberOfOperatorsCorrect(char *phrase);
 
+bool isNumberOfBracketsCorrect(char *phrase);
 
 char ONPFromAlgebraic[50] = "";
 
@@ -49,7 +50,7 @@ int main() {
         if (isNumberOfOperatorsCorrect(ONP))
             ONPCalculations(ONP, top);
         else
-            puts("Nieprawidlowa liczba operatorow w stosunku do ilości liczb!");
+            puts("Nieprawidlowa liczba operatorow w stosunku do ilosci liczb!");
     }
 
     if (methodChoice == 2) {
@@ -60,8 +61,10 @@ int main() {
         if (isNumberOfOperatorsCorrect(algebraic)) {
             algebraicToONP(algebraic, top);
             ONPCalculations(ONPFromAlgebraic, top);
-        } else
-            puts("Nieprawidlowa liczba operatorow w stosunku do ilości liczb!");
+        } else {
+            puts("Nieprawidlowa liczba operatorow w stosunku do ilosci liczb!\n"
+                         "Sprawdź poprawnosc znakow dzialan i nawiasow.");
+        }
     }
     return 0;
 }
@@ -157,33 +160,7 @@ void ONPCalculations(char *onpPhrase, struct stack *top) {
 }
 
 
-bool isNumberOfOperatorsCorrect(char *phrase) {
-    char phraseCopy[40] = "";
-    strcpy(phraseCopy, phrase);
 
-    char *token;
-    char s[] = " ";
-
-    int digitsCounter = 0;
-    int operatorsCounter = 0;
-
-    token = strtok(phraseCopy, s);
-
-    while (token != NULL) {
-
-        if (atof(token) != 0) {
-            digitsCounter++;
-        } else if (*token == '(' || *token == ')')
-            operatorsCounter--;
-        else
-            operatorsCounter++;
-        token = strtok(NULL, s);
-    }
-    if (operatorsCounter == digitsCounter)
-        return true;
-    else
-        return false;
-}
 
 
 //-----------------------------------------------------obsługa stosu----------------------------------------------------
@@ -219,6 +196,10 @@ char *peek(struct stack *top) {
     return NULL;
 }
 
+
+//------------------------------menu + walidacja-------------------------------------------------
+
+
 int menu() {
     puts("\t\tMENU");
     puts("\t-----------------");
@@ -229,6 +210,58 @@ int menu() {
     scanf("%d", &choice);
     return choice;
 }
+
+bool isNumberOfOperatorsCorrect(char *phrase) {     //wykrywa też błąd parowania nawiasów
+    char phraseCopy[40] = "";
+    strcpy(phraseCopy, phrase);
+
+    char *token;
+    char s[] = " ";
+
+    int digitsCounter = 0;
+    int operatorsCounter = 0;
+
+    token = strtok(phraseCopy, s);
+
+    while (token != NULL) {
+
+        if (atof(token) != 0) {
+            digitsCounter++;
+        } else if (*token == '(' || *token == ')')
+            operatorsCounter--;
+        else
+            operatorsCounter++;
+        token = strtok(NULL, s);
+    }
+    if (operatorsCounter == digitsCounter)
+        return true;
+    else
+        return false;
+}
+
+//bool isNumberOfBracketsCorrect(char *phrase){
+//    char phraseCopy[40] = "";
+//    strcpy(phraseCopy, phrase);
+//
+//    char *token;
+//    char s[] = " ";
+//
+//    int leftBracketsCounter = 0, rightBracketsCounter = 0;
+//
+//    token = strtok(phraseCopy, s);
+//
+//    while (token != NULL) {
+//
+//        if (*token == '(') {
+//            leftBracketsCounter++;
+//        } else if (*token == ')')
+//            rightBracketsCounter++;
+//    }
+//    if (leftBracketsCounter == rightBracketsCounter)
+//        return true;
+//    else
+//        return false;
+//}
 
 
 //-------------------------------------------------obsługa algebraicznego-----------------------------------------------

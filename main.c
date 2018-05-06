@@ -23,6 +23,13 @@ void algebraicExpressionInput(char *algebraicExpression);
 
 void algebraicToONP(char *algebraicExpression, struct stack *top);
 
+int getPriority(const char *operator);
+
+void doAppropriateSteps(char *operator, struct stack **top);
+
+bool isNumberOfOperatorsCorrect(char *phrase);
+
+
 char ONPFromAlgebraic[50] = "";
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -33,23 +40,28 @@ struct stack {
 };
 
 
-
 int main() {
     struct stack *top = NULL;
     int methodChoice = menu();
     if (methodChoice == 1) {
         char ONP[40] = "";
         ONPInput(ONP);
-        ONPCalculations(ONP, top);
+        if (isNumberOfOperatorsCorrect(ONP))
+            ONPCalculations(ONP, top);
+        else
+            puts("Nieprawidlowa liczba operatorow w stosunku do ilości liczb!");
     }
 
     if (methodChoice == 2) {
         char algebraic[50] = "";
         algebraicExpressionInput(algebraic);
-        algebraicToONP(algebraic, top);
 
-        ONPCalculations(ONPFromAlgebraic, top);
 
+        if (isNumberOfOperatorsCorrect(algebraic)) {
+            algebraicToONP(algebraic, top);
+            ONPCalculations(ONPFromAlgebraic, top);
+        } else
+            puts("Nieprawidlowa liczba operatorow w stosunku do ilości liczb!");
     }
     return 0;
 }
@@ -72,10 +84,10 @@ void ONPCalculations(char *onpPhrase, struct stack *top) {
 
     token = strtok(onpPhrase, s);
     char *temp = calloc(40, sizeof(char));
+
     while (token != NULL) {
 
-        if (atof(token) != 0) {
-            // jeśli element jest liczbą
+        if (atof(token) != 0) {            // jeśli element jest liczbą
             top = push(top, token);
         } else if (*token == '+') {
             // zdejmij 2 elementy ze stosu i dodaj, potem odloz wynik na stos
@@ -124,13 +136,13 @@ void ONPCalculations(char *onpPhrase, struct stack *top) {
             double result = pow(second, first);
             snprintf(output, 50, "%f", result);
             top = push(top, output);
-        }else if (*token == '%') {
+        } else if (*token == '%') {
             char output[40] = "";
             pop(&top, temp);
             double first = atof(temp);
             pop(&top, temp);
             double second = atof(temp);
-            double result = (int)second % (int)first;
+            double result = (int) second % (int) first;
             snprintf(output, 50, "%f", result);
             top = push(top, output);
         } else if (*token == '=') {
@@ -142,9 +154,36 @@ void ONPCalculations(char *onpPhrase, struct stack *top) {
             printf("Niepoprawny element w wyrazeniu! Sprawdz poprawnosc wpisanych danych.");
         token = strtok(NULL, s);
     }
-    //printf("\nWierzcholek stosu: \t%s", peek(top));
 }
 
+
+bool isNumberOfOperatorsCorrect(char *phrase) {
+    char phraseCopy[40] = "";
+    strcpy(phraseCopy, phrase);
+
+    char *token;
+    char s[] = " ";
+
+    int digitsCounter = 0;
+    int operatorsCounter = 0;
+
+    token = strtok(phraseCopy, s);
+
+    while (token != NULL) {
+
+        if (atof(token) != 0) {
+            digitsCounter++;
+        } else if (*token == '(' || *token == ')')
+            operatorsCounter--;
+        else
+            operatorsCounter++;
+        token = strtok(NULL, s);
+    }
+    if (operatorsCounter == digitsCounter)
+        return true;
+    else
+        return false;
+}
 
 
 //-----------------------------------------------------obsługa stosu----------------------------------------------------
@@ -176,7 +215,7 @@ char *peek(struct stack *top) {
     if (NULL != top)
         return top->data;
 
- //   fprintf(stderr, "Stack is empty.\n");
+    //   fprintf(stderr, "Stack is empty.\n");
     return NULL;
 }
 
@@ -204,16 +243,12 @@ void algebraicExpressionInput(char *algebraicExpression) {
 }
 
 void algebraicToONP(char *algebraicExpression, struct stack *top) {
-    //char ONPFromAlgebraic[50] = "";
-    //int currentIndex = -1;
-    //char space[2] = " ";
 
     char *temp = calloc(40, sizeof(char));
     char *token;
     char s[] = " ";
-
     token = strtok(algebraicExpression, s);
-   // char *temp = calloc(40, sizeof(char));
+
     while (token != NULL) {
 
         if (atof(token) != 0) {
@@ -222,36 +257,69 @@ void algebraicToONP(char *algebraicExpression, struct stack *top) {
             strcat(ONPFromAlgebraic, s);
 
         } else if (*token == '+') {
-            top = push(top, token);
+            doAppropriateSteps(token, &top);
         } else if (*token == '-') {
-            top = push(top, token);
+            doAppropriateSteps(token, &top);
         } else if (*token == '*') {
-            top = push(top, token);
+            doAppropriateSteps(token, &top);
         } else if (*token == '/') {
+            doAppropriateSteps(token, &top);
+        } else if (*token == '^') {         //nie ma potrzeby sprawdzać, bo nie ma ważniejszego operatora
             top = push(top, token);
-        } else if (*token == '^') {
+        } else if (*token == '%') {
+            doAppropriateSteps(token, &top);
+        } else if (*token == '(') {
             top = push(top, token);
-        }else if (*token == '%') {
-            top = push(top, token);
-        } else if (*token == '='){
-            do{
+        } else if (*token == ')') {
+            while (peek(top) != "(") {
                 pop(&top, temp);
                 strcat(ONPFromAlgebraic, temp);
                 strcat(ONPFromAlgebraic, s);
-            }while(top != NULL);
+            }
+            pop(&top, temp);
+        } else if (*token == '=') {
+            do {
+                pop(&top, temp);
+                strcat(ONPFromAlgebraic, temp);
+                strcat(ONPFromAlgebraic, s);
+            } while (top != NULL);
             strcat(ONPFromAlgebraic, token);
         }
-
-
-
-            token = strtok(NULL, s);
+        token = strtok(NULL, s);
     }
-
-    printf("\nONPFromAlgebraic: %s", ONPFromAlgebraic);
+    printf("\nONPFromAlgebraic: %s\n", ONPFromAlgebraic);
 }
 
-bool priorityCheck(char *operator){ //dalej w programie token po prostu
-    //jeżeli na topie jest ważniejszy, zdjąć wszystkie
+void doAppropriateSteps(char *operator, struct stack **top) { //dalej w programie token po prostu
+    char *temp = calloc(40, sizeof(char));
+    char space[] = " ";
+    if (getPriority(operator) <= getPriority(peek(*top))) {
+        printf("Jest mniej wazny");
+        while (*top != NULL) {
+            pop(top, temp);
+            strcat(ONPFromAlgebraic, temp);
+            strcat(ONPFromAlgebraic, space);
+        }
+    }
+    *top = push(*top, operator);
+}
+
+
+int getPriority(const char *operator) {
+    if (operator == NULL)
+        return -1;
+    if (*operator == '(')
+        return 0;
+    else if (*operator == '+' || *operator == '-')
+        return 1;
+    else if (*operator == '*' || *operator == '/' || *operator == '%')
+        return 2;
+    else if (*operator == '^')
+        return 3;
 }
 
 //char strcat (char *s, const char *ct) ---- Dopisuje znaki z tablicy znaków ct na koniec tablicy s, zwracane jest s.
+
+
+//jeżeli na topie jest ważniejszy, zdjąć wszystkie i na koniec odłożyć
+//jeżeli dokładamy ważniejszy lub stos jest pusty-> nic oprócz push

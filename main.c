@@ -4,6 +4,10 @@
 #include <math.h>
 #include <stdbool.h>
 
+struct stack {
+    char *data;
+    struct stack *next;
+};
 
 //---------------------------------------------------prototypy----------------------------------------------------------
 
@@ -11,7 +15,7 @@ void ONPInput(char onpPhrase[]);
 
 struct stack *push(struct stack *top, char data[]);
 
-void pop(struct stack **top, char *result);
+struct stack *pop(struct stack *top, char *result);
 
 char *peek(struct stack *top);
 
@@ -35,12 +39,6 @@ char ONPFromAlgebraic[50] = "";
 
 //----------------------------------------------------------------------------------------------------------------------
 
-struct stack {
-    char *data;
-    struct stack *next;
-};
-
-
 int main() {
     struct stack *top = NULL;
     int methodChoice = menu();
@@ -49,26 +47,19 @@ int main() {
         ONPInput(ONP);
         if (isNumberOfOperatorsCorrect(ONP))
             ONPCalculations(ONP, top);
-        else
-            puts("Nieprawidlowa liczba operatorow w stosunku do ilosci liczb!");
     }
 
     if (methodChoice == 2) {
         char algebraic[50] = "";
         algebraicExpressionInput(algebraic);
 
-
-        if (isNumberOfOperatorsCorrect(algebraic)) {
+        if (isNumberOfOperatorsCorrect(algebraic) && isNumberOfBracketsCorrect(algebraic)) {
             algebraicToONP(algebraic, top);
             ONPCalculations(ONPFromAlgebraic, top);
-        } else {
-            puts("Nieprawidlowa liczba operatorow w stosunku do ilosci liczb!\n"
-                         "Sprawdź poprawnosc znakow dzialan i nawiasow.");
         }
     }
     return 0;
 }
-
 
 //---------------------------------------------------obsługa ONP--------------------------------------------------------
 
@@ -89,110 +80,100 @@ void ONPCalculations(char *onpPhrase, struct stack *top) {
     char *temp = calloc(40, sizeof(char));
 
     while (token != NULL) {
+        double first = 0, second = 0, result = 0;
 
         if (atof(token) != 0) {            // jeśli element jest liczbą
             top = push(top, token);
         } else if (*token == '+') {
             // zdejmij 2 elementy ze stosu i dodaj, potem odloz wynik na stos
             char output[40] = "";
-            pop(&top, temp);
-            double first = atof(temp);
-            pop(&top, temp);
-            double second = atof(temp);
-            double result = first + second;
-            snprintf(output, 50, "%f", result);
+            top = pop(top, temp);
+            first = atof(temp);
+            top = pop(top, temp);
+            second = atof(temp);
+            result = first + second;
+            snprintf(output, 50, "%lf", result);
             top = push(top, output);
+
         } else if (*token == '-') {
             // zdejmij 2 elementy ze stosu i dodaj, potem odloz wynik na stos
             char output[40] = "";
-            pop(&top, temp);
-            double first = atof(temp);
-            pop(&top, temp);
-            double second = atof(temp);
-            double result = second - first;
-            snprintf(output, 50, "%f", result);
+            top = pop(top, temp);
+            first = atof(temp);
+            top = pop(top, temp);
+            second = atof(temp);
+            result = second - first;
+            snprintf(output, 50, "%lf", result);
             top = push(top, output);
         } else if (*token == '*') {
             char output[40] = "";
-            pop(&top, temp);
-            double first = atof(temp);
-            pop(&top, temp);
-            double second = atof(temp);
-            double result = first * second;
-            snprintf(output, 50, "%f", result);
+            top = pop(top, temp);
+            first = atof(temp);
+            top = pop(top, temp);
+            second = atof(temp);
+            result = first * second;
+            snprintf(output, 50, "%lf", result);
             top = push(top, output);
         } else if (*token == '/') {
             char output[40] = "";
-            pop(&top, temp);
-            double first = atof(temp);
-            pop(&top, temp);
-            double second = atof(temp);
-            double result = second / first;
-            snprintf(output, 50, "%f", result);
+            top = pop(top, temp);
+            first = atof(temp);
+            top = pop(top, temp);
+            second = atof(temp);
+            result = second / first;
+            snprintf(output, 50, "%lf", result);
             top = push(top, output);
         } else if (*token == '^') {
             char output[40] = "";
-            pop(&top, temp);
-            double first = atof(temp);
-            pop(&top, temp);
-            double second = atof(temp);
-            double result = pow(second, first);
-            snprintf(output, 50, "%f", result);
+            top = pop(top, temp);
+            first = atof(temp);
+            top = pop(top, temp);
+            second = atof(temp);
+            result = pow(second, first);
+            snprintf(output, 50, "%lf", result);
             top = push(top, output);
         } else if (*token == '%') {
             char output[40] = "";
-            pop(&top, temp);
-            double first = atof(temp);
-            pop(&top, temp);
-            double second = atof(temp);
-            double result = (int) second % (int) first;
-            snprintf(output, 50, "%f", result);
+            top = pop(top, temp);
+            first = atof(temp);
+            top = pop(top, temp);
+            second = atof(temp);
+            result = (int) second % (int) first;
+            snprintf(output, 50, "%lf", result);
             top = push(top, output);
         } else if (*token == '=') {
             if (top->next == NULL)
                 printf("Wynik wprowadzonego wyrazenia wynosi: %.2f\n", atof(peek(top)));
-            else
-                printf("Niepoprawny element w wyrazeniu! Sprawdz poprawnosc wpisanych danych.");
-        } else
-            printf("Niepoprawny element w wyrazeniu! Sprawdz poprawnosc wpisanych danych.");
+        }
         token = strtok(NULL, s);
     }
 }
 
-
-
-
-
 //-----------------------------------------------------obsługa stosu----------------------------------------------------
-
-
 
 struct stack *push(struct stack *top, char *data) {
     struct stack *new_node = (struct stack *)
             malloc(sizeof(struct stack));
 
     if (NULL != new_node) {
-        new_node->data = data;
+        new_node->data = calloc(1000, sizeof(char));
+        strcpy(new_node->data, data);
         new_node->next = top;
         top = new_node;
     }
     return top;
 }
 
-void pop(struct stack **top, char *result) {
-    if (NULL != *top) {
-        strcpy(result, (*top)->data);
-        struct stack *tmp = (*top)->next;
-        free(*top);
-        *top = tmp;
-    }
+struct stack *pop(struct stack *top, char *result) {
+    strcpy(result, top->data);
+    struct stack *tmp = top->next;
+    free(top);
+    return tmp;
 }
 
 char *peek(struct stack *top) {
     if (NULL != top)
         return top->data;
-
-    //   fprintf(stderr, "Stack is empty.\n");
     return NULL;
 }
 
@@ -211,7 +192,7 @@ int menu() {
     return choice;
 }
 
-bool isNumberOfOperatorsCorrect(char *phrase) {     //wykrywa też błąd parowania nawiasów
+bool isNumberOfOperatorsCorrect(char *phrase) {
     char phraseCopy[40] = "";
     strcpy(phraseCopy, phrase);
 
@@ -227,41 +208,59 @@ bool isNumberOfOperatorsCorrect(char *phrase) {     //wykrywa też błąd parowa
 
         if (atof(token) != 0) {
             digitsCounter++;
-        } else if (*token == '(' || *token == ')')
-            operatorsCounter--;
-        else
+        } else if (*token == '(' || *token == ')') {}
+        else if (*token == '+' || *token == '-' ||
+                 *token == '*' || *token == '/' ||
+                 *token == '%' || *token == '^' ||
+                 *token == '=')
             operatorsCounter++;
+
+        else {
+            printf("Niepoprawny element w wyrazeniu! Sprawdz poprawnosc wpisanych danych.");
+            return false;
+        }
         token = strtok(NULL, s);
     }
     if (operatorsCounter == digitsCounter)
         return true;
-    else
+    else {
+        puts("Nieprawidlowa liczba operatorow w stosunku do ilosci liczb!");
         return false;
+    }
 }
 
-//bool isNumberOfBracketsCorrect(char *phrase){
-//    char phraseCopy[40] = "";
-//    strcpy(phraseCopy, phrase);
-//
-//    char *token;
-//    char s[] = " ";
-//
-//    int leftBracketsCounter = 0, rightBracketsCounter = 0;
-//
-//    token = strtok(phraseCopy, s);
-//
-//    while (token != NULL) {
-//
-//        if (*token == '(') {
-//            leftBracketsCounter++;
-//        } else if (*token == ')')
-//            rightBracketsCounter++;
-//    }
-//    if (leftBracketsCounter == rightBracketsCounter)
-//        return true;
-//    else
-//        return false;
-//}
+bool isNumberOfBracketsCorrect(char *phrase) {
+    char phraseCopy[40] = "";
+    strcpy(phraseCopy, phrase);
+
+    char *token;
+    char s[] = " ";
+
+    int leftBracketsCounter = 0, rightBracketsCounter = 0;
+
+    token = strtok(phraseCopy, s);
+
+    while (token != NULL) {
+
+        if (*token == '(') {
+            leftBracketsCounter++;
+        } else if (*token == ')')
+            if (leftBracketsCounter > 0) {      //najpierw musi być lewy nawias
+                rightBracketsCounter++;
+            } else {
+                puts("Nieprawidlowe parowanie nawiasow!");
+                return false;
+            }
+
+        token = strtok(NULL, s);
+    }
+    if (leftBracketsCounter == rightBracketsCounter)
+        return true;
+    else {
+        puts("Nieprawidlowe parowanie nawiasow!");
+        return false;
+    }
+}
 
 
 //-------------------------------------------------obsługa algebraicznego-----------------------------------------------
@@ -289,37 +288,34 @@ void algebraicToONP(char *algebraicExpression, struct stack *top) {
             strcat(ONPFromAlgebraic, token);
             strcat(ONPFromAlgebraic, s);
 
-        } else if (*token == '+') {
+        } else if (*token == '+' || *token == '-' ||
+                   *token == '*' || *token == '/' ||
+                   *token == '%') {
             doAppropriateSteps(token, &top);
-        } else if (*token == '-') {
-            doAppropriateSteps(token, &top);
-        } else if (*token == '*') {
-            doAppropriateSteps(token, &top);
-        } else if (*token == '/') {
-            doAppropriateSteps(token, &top);
-        } else if (*token == '^') {         //nie ma potrzeby sprawdzać, bo nie ma ważniejszego operatora
+        } else if (*token == '^') { //nie ma potrzeby sprawdzać, bo nie ma ważniejszego operatora
             top = push(top, token);
-        } else if (*token == '%') {
-            doAppropriateSteps(token, &top);
         } else if (*token == '(') {
             top = push(top, token);
         } else if (*token == ')') {
-            while (peek(top) != "(") {
-                pop(&top, temp);
+            while (*peek(top) != '(') {
+                top = pop(top, temp);
+
                 strcat(ONPFromAlgebraic, temp);
                 strcat(ONPFromAlgebraic, s);
             }
-            pop(&top, temp);
+            top = pop(top, temp);
+
         } else if (*token == '=') {
-            do {
-                pop(&top, temp);
+            while (top != NULL) {
+                top = pop(top, temp);
                 strcat(ONPFromAlgebraic, temp);
                 strcat(ONPFromAlgebraic, s);
-            } while (top != NULL);
+            }
             strcat(ONPFromAlgebraic, token);
         }
         token = strtok(NULL, s);
     }
+
     printf("\nONPFromAlgebraic: %s\n", ONPFromAlgebraic);
 }
 
@@ -327,9 +323,9 @@ void doAppropriateSteps(char *operator, struct stack **top) { //dalej w programi
     char *temp = calloc(40, sizeof(char));
     char space[] = " ";
     if (getPriority(operator) <= getPriority(peek(*top))) {
-        printf("Jest mniej wazny");
+        printf("Jest mniej wazny lub rownowazny.");
         while (*top != NULL) {
-            pop(top, temp);
+            *top = pop(*top, temp);
             strcat(ONPFromAlgebraic, temp);
             strcat(ONPFromAlgebraic, space);
         }
